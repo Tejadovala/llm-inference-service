@@ -1,0 +1,28 @@
+services:
+  gateway:
+    build: ./gateway
+    container_name: gateway
+    ports: ["8000:8000"]
+    environment:
+      OLLAMA_URL: http://172.17.0.1:11434
+      MODEL: ${MODEL:-llama3.2:1b}
+      MAX_CONCURRENCY: ${MAX_CONCURRENCY:-4}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    ports: ["9090:9090"]
+    volumes: ["./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro"]
+    depends_on: [gateway]
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    ports: ["3000:3000"]
+    environment:
+      GF_AUTH_ANONYMOUS_ENABLED: "true"
+      GF_AUTH_ANONYMOUS_ORG_ROLE: Admin
+    volumes:
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
+    depends_on: [prometheus]
